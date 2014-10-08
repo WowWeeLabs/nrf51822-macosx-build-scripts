@@ -126,8 +126,12 @@ ASSEMBLER_OBJECTS = $(addprefix $(OBJECT_DIRECTORY)/, $(ASSEMBLER_SOURCE_FILENAM
 vpath %.c $(C_SOURCE_PATHS)
 vpath %.s $(ASSEMBLER_SOURCE_PATHS)
 
+## Default build target
+.PHONY: all
+all: debug
+
 # Include automatically previously generated dependencies
--include $(addprefix $(OBJECT_DIRECTORY)/, $(COBJS:.o=.d))
+-include $(C_OBJECTS:.o=.d)
 
 ### Targets
 # debug:    OUTPUT_FILENAME:=$(OUTPUT_FILENAME)-debug
@@ -151,15 +155,12 @@ $(BUILD_DIRECTORIES):
 	$(MK) $@
 
 ## Create objects from C source files
-$(OBJECT_DIRECTORY)/%.d: %.c
-# Build header dependencies
-	@echo Build dependency for $<
-	@$(CC) $(CFLAGS) $(INCLUDEPATHS) -M $< -MF $@ -MT $@
-
-$(OBJECT_DIRECTORY)/%.o: %.c $(OBJECT_DIRECTORY)/%.d
+$(OBJECT_DIRECTORY)/%.o: %.c
 # Do the actual compilation
+	@echo Build dependency for $<
+	$(CC) $(CFLAGS) $(INCLUDEPATHS) -M $< -MF $(@:.o=.d) -MT $@
 	@echo Build $<
-	@$(CC) $(CFLAGS) $(INCLUDEPATHS) -g -c -o $@ $<
+	$(CC) $(CFLAGS) $(INCLUDEPATHS) -g -c -o $@ $<
 
 ## Assemble .s files
 $(OBJECT_DIRECTORY)/%.o: %.s
@@ -177,10 +178,6 @@ $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME).bin: $(OUTPUT_BINARY_DIRECTORY)/$(
 ## Create binary .hex file from the .out file
 $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME).hex: $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME).out
 	$(OBJCOPY) -O ihex $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME).out $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME).hex
-
-## Default build target
-.PHONY: all
-all: clean debug
 
 clean:
 	$(RM) $(OUTPUT_BINARY_DIRECTORY)
